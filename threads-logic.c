@@ -21,20 +21,25 @@
 enum ACTIONTYPE
 {
     ACTION_INVAL = -1,
+    ACTION_CHECK,
     ACTION_START,
     ACTION_STOP,
     ACTION_LAST
 };
 
+typedef struct
+{
+    enum ACTIONTYPE type;
+    void            *result;
+}ACTION;
+
 static QUEUE    tq = {0};                               // queue for spinning off threads
-static MUTEX    mut = NULL;                             // mutex for thread work
 static THREAD   threads[MAXIMUM_THREAD_COUNT] = {0};    // thread array to store thread handles
 
 // STATIC PROTOTYPES
 static void ThreadAction(const long index, const void *value, const void *userdata);
 static void ThreadConcurrent(void);
 static void ThreadProc(THREAD thread);
-static void ThreadCheckNode(const long index, const void *value, const void *userdata);
 static BOOL ThreadSpool(void);
 
 /* set in the application defaults */
@@ -88,16 +93,13 @@ BOOL Logic(const BOOL start)
             if(Log(win.instance, NULL, path) && Language())
             {
                 // create the queue and the mutex for the thread work
-                success = (Queue(QUEUE_FIFO, sizeof(INDEX), &tq) && Mutex(&mut));
+                success = Queue(sizeof(INDEX), &tq);
             }
         }
     }else{
-        // stop the threads
+        // stop the threads, destroy the queue
         ThreadRun(FALSE);
-
-        // destroy the queue and working mutex
         QueueKill(&tq);
-        MutexKill(&mut);
 
         // destroy language map and log recorder
         MapKill(&indices);
@@ -111,20 +113,24 @@ BOOL Logic(const BOOL start)
 /* start or stop the threads in the queue */
 static void ThreadAction(const long index, const void *value, const void *userdata)
 {
-    enum ACTIONTYPE action = *((enum ACTIONTYPE*)userdata);
-    INDEX           tidx = *((INDEX*)value);
+    ACTION  *action = ((ACTION*)userdata);
+    INDEX   tidx = *((INDEX*)value);
 
-    if((index >= 0) && Clamped(tidx, -1, MAXIMUM_THREAD_COUNT) && Clamped(action, ACTION_INVAL, ACTION_LAST))
+    if((action != NULL) && (index >= 0) && Clamped(tidx, -1, MAXIMUM_THREAD_COUNT) && Clamped(action->type, ACTION_INVAL, ACTION_LAST))
     {
         // perform the specified action on each node of the queue
-        switch(action)
+        switch(action->type)
         {
+            case ACTION_CHECK:
+                *((BOOL*)action->result) |= !ThreadCancelled(threads[tidx]);
+                break;
+
             case ACTION_START:
-                ThreadSuspend(FALSE, threads[tidx]);
+                *((long*)action->result) += ThreadSuspend(FALSE, threads[tidx]);
                 break;
 
             case ACTION_STOP:
-                ThreadKill(FALSE, &threads[tidx]);
+                *((long*)action->result) += ThreadKill(FALSE, &threads[tidx]);
                 break;
         }
     }
@@ -133,12 +139,15 @@ static void ThreadAction(const long index, const void *value, const void *userda
 /* check if any threads are running, if so, shut them down */
 void ThreadCheck(const HWND hwnd)
 {
+    ACTION  action = {0};
     BOOL    any = FALSE;
 
     if(hwnd != NULL)
     {
         // assume no threads are running and run through queue to see if any threads are running
-        QueueForEach(tq, FALSE, &any, ThreadCheckNode);
+        action.result = &any;
+        action.type = ACTION_CHECK;
+        QueueForEach(tq, FALSE, &action, ThreadAction);
         if(!any)
         {
             // perform cleanup
@@ -150,18 +159,6 @@ void ThreadCheck(const HWND hwnd)
     }
 }
 
-/* check each node of the queue for any uncancelled thread */
-static void ThreadCheckNode(const long index, const void *value, const void *userdata)
-{
-    INDEX   tidx = *((INDEX*)value);
-    BOOL    *any = ((BOOL*)userdata);
-
-    if((index >= 0) && (any != NULL) && Clamped(tidx, -1, MAXIMUM_THREAD_COUNT))
-    {
-        *any |= !ThreadCancelled(threads[tidx]);
-    }
-}
-
 /* work threads concurrently */
 static void ThreadConcurrent(void)
 {
@@ -169,7 +166,7 @@ static void ThreadConcurrent(void)
     long    *count = NULL;
 
     // attempt to lock the mutex
-    if(MutexLock(mut, WAIT_INFINITE))
+    if(QueueLock(TRUE, tq))
     {
         // pop first thread ID that should run and perform its work
         if(QueuePop(&tidx, tq))
@@ -188,7 +185,7 @@ static void ThreadConcurrent(void)
         }
 
         // release the mutex
-        MutexUnlock(mut);
+        QueueLock(FALSE, tq);
     }
 }
 
@@ -216,8 +213,11 @@ static void ThreadProc(THREAD thread)
 /* spin up the threads and start demo or stop them */
 void ThreadRun(const BOOL start)
 {
-    enum ACTIONTYPE action = ACTION_START;
+    ACTION  action = {0};
+    long    count = 0;
 
+    action.result = &count;
+    action.type = ACTION_START;
     if(start)
     {
         // reset counters and track struct
@@ -229,7 +229,7 @@ void ThreadRun(const BOOL start)
         QueueForEach(tq, FALSE, &action, ThreadAction);
         Timer(wnd.handl, TIMER_REFRESH_ID, TIMER_REFRESH_PERIOD);
     }else{
-        action = ACTION_STOP;
+        action.type = ACTION_STOP;
         QueueForEach(tq, TRUE, &action, ThreadAction);
         Timer(wnd.handl, TIMER_REFRESH_ID, 0);
     }
