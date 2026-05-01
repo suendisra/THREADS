@@ -33,7 +33,7 @@ void Input(const WPARAM wp, const UINT msg)
         if(keyboard.up[strings[STRING_ITERATIONS][idx]] && !app.started)
         {
             // prompt user for desired amount of iterations each thread should perform
-            if(PromptLong(wnd.handl, strings[STRING_PROMPT_ITERATIONS], app.desired, &temp) == PMTRES_SUCCESS)
+            if(PromptLong(wnd.handl, strings[STRING_PROMPT_ITERATIONS], app.desired, &temp) == RESULT_SUCCESS)
             {
                 if(temp > 0)
                 {
@@ -66,7 +66,7 @@ void Input(const WPARAM wp, const UINT msg)
         if(keyboard.up[strings[STRING_THREADS][idx]] && !app.started)
         {
             // prompt user for desired amount of threads to create
-            if(PromptLong(wnd.handl, strings[STRING_PROMPT_THREAD_COUNT], app.tcount, &temp) == PMTRES_SUCCESS)
+            if(PromptLong(wnd.handl, strings[STRING_PROMPT_THREAD_COUNT], app.tcount, &temp) == RESULT_SUCCESS)
             {
                 // ensure successful run of prompt routine did not end in cancellation
                 if((temp > 0) && (temp <= MAXIMUM_THREAD_COUNT))
