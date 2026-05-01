@@ -133,15 +133,13 @@ BOOL Graphics(const BOOL start)
                 GphFontColor(gph, GGRAY, GTRANS);
 
                 // set up the graphics color pool
-                Pool(GTRANS, GTRANS, GTRANS, 0, &pool);
-                PoolDefault(pool);
-                success = TRUE;
+                success = (Pool(GTRANS, GTRANS, GTRANS, 0, &pool) && PoolDefault(pool));
             }
         }
     }else{
         // destroy the font and graphics objects
         FontKillGDI(font);
-        PoolKill(pool);
+        PoolKill(&pool);
         GphKill(&gph);
         success = TRUE;
     }
