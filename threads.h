@@ -11,6 +11,7 @@
 #include <util-map.h>
 #include <util-mutex.h>
 #include <util-queue.h>
+#include <util-sem.h>
 
 #include <gph.h>
 #include <gph-font.h>
@@ -113,12 +114,12 @@ void Draw(const HWND hwnd);
 BOOL Graphics(const BOOL start);
 
 /**
-  @fn               void Input(const WPARAM wp, const UINT msg)
+  @fn               void Input(const WORD key, const BOOL down)
   @brief            handle user input
   @param[in]        wp the window WPARAM for which the keyboard event has occurred
   @param[in]        msg the windows processing message for WM_KEYDOWN or WM_KEYUP
 */
-void Input(const WPARAM wp, const UINT msg);
+void Input(const WORD key, const BOOL down);
 
 /**
   @fn               BOOL Language(void)
@@ -136,11 +137,11 @@ BOOL Language(void);
 BOOL Logic(const BOOL start);
 
 /**
-  @fn               void ThreadCheck(const HWND hwnd)
+  @fn               void ThreadCheck(const HWND hwnd, const UINT timerID)
   @brief            checks to see if any thread for the application is still running
   @param[in]        hwnd handle to window for which to check the threads
 */
-void ThreadCheck(const HWND hwnd);
+void ThreadCheck(const HWND hwnd, const UINT timerID);
 
 /**
   @fn               void ThreadRun(const BOOL start)

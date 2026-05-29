@@ -133,7 +133,7 @@ BOOL Graphics(const BOOL start)
                 GphFontColor(gph, GGRAY, GTRANS);
 
                 // set up the graphics color pool
-                success = (Pool(GTRANS, GTRANS, GTRANS, 0, &pool) && PoolDefault(pool));
+                success = Pool(&pool);
             }
         }
     }else{

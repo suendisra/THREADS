@@ -12,13 +12,13 @@ static MOUSE    mouse = {0};
 static long MapIndex(const enum STRINGS str);
 
 /* handle user input */
-void Input(const WPARAM wp, const UINT msg)
+void Input(const WORD key, const BOOL down)
 {
     long    idx = 0;
     long    temp = 0;
     BOOL    input = FALSE;
 
-    if(KeySet(wp, (msg == WM_KEYDOWN), &keyboard) == TRUE)
+    if(KeySet(key, down, &keyboard))
     {
         // toggle concurrency display
         idx = MapIndex(STRING_CONCURRENT);
@@ -104,5 +104,8 @@ void Input(const WPARAM wp, const UINT msg)
 static long MapIndex(const enum STRINGS str)
 {
     long    temp = (long)str;
-    return((*(long*)MapPop(indices, &temp, sizeof(temp))) + 1);
+    long    idx = -1;
+
+    MapPop(indices, &idx, &temp, sizeof(temp));
+    return(idx + 1);
 }

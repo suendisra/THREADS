@@ -11,7 +11,6 @@
 #define DEFAULT_THREAD_COUNT        20
 
 #define SEMAPHORE_GATES             1   // number of threads that will be allowed to run at a single time
-#define SLEEP_WAIT                  1   // sleep for each thread in ms
 
 #define TIMER_REFRESH_ID            9168
 #define TIMER_REFRESH_PERIOD        50
@@ -33,8 +32,9 @@ typedef struct
     void            *result;
 }ACTION;
 
-static QUEUE    tq = {0};                               // queue for spinning off threads
-static THREAD   threads[MAXIMUM_THREAD_COUNT] = {0};    // thread array to store thread handles
+static QUEUE    tq = NULL; // queue for spinning off threads
+static SEM      sq = NULL; // semaphore to protect queue work
+static THREAD   threads[MAXIMUM_THREAD_COUNT] = {0}; // thread array to store thread handles
 
 // STATIC PROTOTYPES
 static void ThreadAction(const long index, const void *value, const void *userdata);
@@ -60,7 +60,7 @@ BOOL Language(void)
     BOOL        success = FALSE;
 
     // load in the strings
-    if(Map(&indices) && StrList(win.instance, baseID, STRING_LAST, sizeof(strings[0]), &strings[0][0]))
+    if(Map(&indices) && StrList(baseID, STRING_LAST, sizeof(strings[0]), &strings[0][0]))
     {
         // build the map for this language
         for(n = STRING_TITLE; (n < STRING_LAST); ++n)
@@ -92,14 +92,15 @@ BOOL Logic(const BOOL start)
             // start up logging needs
             if(Log(win.instance, NULL, path) && Language())
             {
-                // create the queue and the mutex for the thread work
-                success = Queue(sizeof(INDEX), &tq);
+                // create the queue and the semaphore for the thread work
+                success = Queue(sizeof(INDEX), &tq) && Semaphore(SEMAPHORE_GATES, &sq);
             }
         }
     }else{
         // stop the threads, destroy the queue
         ThreadRun(FALSE);
         QueueKill(&tq);
+        SemaphoreKill(&sq);
 
         // destroy language map and log recorder
         MapKill(&indices);
@@ -137,21 +138,26 @@ static void ThreadAction(const long index, const void *value, const void *userda
 }
 
 /* check if any threads are running, if so, shut them down */
-void ThreadCheck(const HWND hwnd)
+void ThreadCheck(const HWND hwnd, const UINT timerID)
 {
     ACTION  action = {0};
     BOOL    any = FALSE;
 
-    if(hwnd != NULL)
+    if((hwnd != NULL) && (timerID > 0))
     {
         // assume no threads are running and run through queue to see if any threads are running
         action.result = &any;
         action.type = ACTION_CHECK;
-        QueueForEach(tq, FALSE, &action, ThreadAction);
-        if(!any)
+        if(SemaphoreTake(sq, WAIT_INFINITE))
         {
-            // perform cleanup
-            ThreadRun(FALSE);
+            QueueForEach(tq, FALSE, &action, ThreadAction);
+            if(!any)
+            {
+                // perform cleanup
+                ThreadRun(FALSE);
+            }
+
+            SemaphoreGive(sq);
         }
 
         // redraw the screen
@@ -165,8 +171,8 @@ static void ThreadConcurrent(void)
     INDEX   tidx = -1;
     long    *count = NULL;
 
-    // attempt to lock the mutex
-    if(QueueLock(TRUE, tq))
+    // attempt to take the semaphore
+    if(SemaphoreTake(sq, WAIT_INFINITE))
     {
         // pop first thread ID that should run and perform its work
         if(QueuePop(&tidx, tq))
@@ -184,8 +190,8 @@ static void ThreadConcurrent(void)
             }
         }
 
-        // release the mutex
-        QueueLock(FALSE, tq);
+        // release the semaphore
+        SemaphoreGive(sq);
     }
 }
 
