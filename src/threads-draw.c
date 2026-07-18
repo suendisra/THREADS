@@ -1,9 +1,8 @@
 /**
   @file     threads-draw.c
   @brief    Source file for THREADS application drawing routines
-  @author   suendisra
 */
-#include "threads.h"
+#include "../inc/threads.h"
 
 #define FONT_NAME                   L"Consolas"
 #define FONT_SIZE                   24

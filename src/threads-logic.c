@@ -1,9 +1,8 @@
 /**
   @file     threads.c
   @brief    Source file for THREADS application logic
-  @author   suendisra
 */
-#include "threads.h"
+#include "../inc/threads.h"
 
 #define COMMAND_CHAR                L'['
 

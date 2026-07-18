@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by THREADS.rc
+// Used by C:\PROJECTS\THREADS\THREADS.rc
 //
 #define IDI_THREADS                     101
 #define IDS_EN_TITLE                    102
