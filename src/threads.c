@@ -3,7 +3,7 @@
   @brief    Source file for THREADS application
   @author   suendisra
 */
-#include "../inc/threads.h"
+#include "threads.h"
 
 // static prototypes
 static BOOL Start(void);

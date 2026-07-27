@@ -2,7 +2,7 @@
   @file     threads.c
   @brief    Source file for THREADS application input routines
 */
-#include "../inc/threads.h"
+#include "threads.h"
 
 static KEYBOARD keyboard = {0};
 static MOUSE    mouse = {0};
