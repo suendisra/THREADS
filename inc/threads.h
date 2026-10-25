@@ -5,7 +5,6 @@
 #ifndef _THREADS_H_
 #define _THREADS_H_
 
-#include <util.h>
 #include <util-dsa.h>
 #include <util-file.h>
 #include <util-log.h>
@@ -15,14 +14,13 @@
 #include <util-str.h>
 #include <util-sync.h>
 
-#include <gph.h>
 #include <gph-font.h>
 #include <gph-pool.h>
 #include <gph-shape.h>
 #include <gph-std.h>
 
-#include <win.h>
 #include <win-prompt.h>
+#include <win-std.h>
 
 #include "resource.h"
 
